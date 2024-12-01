@@ -3,44 +3,41 @@ const app = express()
 const port = 3000
 const bodyParser = require("body-parser");
 
-//// Função para criar um usuário administrador por padrão
-const criarUsuarioAdmin = () => {
-    
-}
-
 //middleware para processar json no corpo da requisição
 app.use(bodyParser.json());
 
-// Rota de cadastro de usuário
-app.post('/cadastro', (req, res) => {
-    const { nome, email, senha } = req.body;
+//FUNÇÃO para criar um usuário administrador por padrão
+const criarUsuarioAdmin = () => {
+    const adminPadrão = {
+        nome: 'Admin',
+        telefone: '',
+        dataNascimento: '',
+        usuario: 'admin',
+        senha: 'admin'
+      };
+}
 
-    // Validação simples dos dados recebidos
-    if (!nome || !email || !senha) {
-        return res.status(400).json({ error: 'Todos os campos são obrigatórios.' });
+//ROTA para criar um novo admin
+app.post('/admin/criar-admin', (req, res) => {
+    const { nome, telefone, dataNascimento, usuario, senha } = req.body;
+  
+    // Valide os dados de entrada
+    if (!nome || !usuario || !senha || !telefone || !dataNascimento) {
+      return res.status(400).json({ mensagem: 'Todos os campos devem ser preenchidos' });
     }
-
-    // Simulando o cadastro de um usuário (poderia ser inserido em um banco de dados)
-    const novoUsuario = {
-        id: Date.now(), // Gera um ID único baseado no timestamp
-        nome,
-        email,
-        senha // Em produção, nunca armazene senhas sem antes criptografá-las!
-    };
-
-    console.log('Usuário cadastrado:', novoUsuario);
-
-    // Retorna a confirmação do cadastro
-    res.status(201).json({
-        message: 'Usuário cadastrado com sucesso!',
-        usuario: novoUsuario
+  
+    // Crie o novo administrador
+    const novoAdmin = criarUsuarioAdmin({
+      nome,
+      telefone,
+      dataNascimento,
+      usuario,
+      senha
     });
-});
-
-
-app.get('/', (req, res) => {
-    res.send('Hello World!')
-})
+  
+    // Retorne uma resposta de sucesso
+    res.json({ mensagem: 'Administrador criado com sucesso'});
+  });
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`)
