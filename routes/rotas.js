@@ -2,6 +2,28 @@ const express = require('express')
 const router = express.Router()
 const app = express()
 
+const EventoModel = require('../model/model.js')
+
+router.get('/', (req, res) => {
+  let lista = EventosModel.lerTodosEventos;
+  if (req.query.nome){
+    lista = EventoModel.lerNomeEvento(req.query.nome);
+  }else if (req.query.tipo){
+    list = EventoModel.lerTipoEvento(req.query.tipo);
+  }
+  res.json({ count: lista.length, eventos: lista });
+})
+
+router.get('/:id', (req, res) => {
+  let obj = EventoModel.lerPosicaoPorId(req.params.id)
+  if (obj){
+    res.json({obj: obj})
+  }else{
+    res.status(404).json({mensagem: 'O ID do Evento não foi encontrado'})
+  }
+})
+
+
 module.exports = router
 
 //ROTA para criar um novo admin
