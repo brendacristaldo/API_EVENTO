@@ -68,7 +68,8 @@ module.exports = {
 
 
 const bodyParser = require("body-parser");
-const e = require("express");
+const express = require("express");
+const app = express();
 
 //middleware para processar json no corpo da requisição
 app.use(bodyParser.json());
