@@ -25,7 +25,7 @@ export const eventController = {
     }
   },
 
-  // Get todos os ecentos
+  // Get todos os eventos
   getAllEvents: async (req, res, next) => {
     try {
       const events = await readData('events');
