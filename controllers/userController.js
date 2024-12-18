@@ -3,124 +3,124 @@ import jwt from 'jsonwebtoken';
 import { CustomError } from '../utils/customError.js';
 
 export const userController = {
-  // Criar um novo usuario
-  createUser: async (req, res, next) => {
+  // Criar um novo usuário
+  criarUsuario: async (req, res, next) => {
     try {
       const { nome, telefone, dataNascimento, usuario, senha } = req.body;
       
-      const users = await readData('users');
+      const usuarios = await readData('users');
       
-      if (users.some(u => u.usuario === usuario)) {
+      if (usuarios.some(u => u.usuario === usuario)) {
         throw new CustomError('Usuário já existe', 400);
       }
-
-      const hashedPassword = await bcrypt.hash(senha, 10);
       
-      const newUser = {
+      const senhaHasheada = await bcrypt.hash(senha, 10);
+      
+      const novoUsuario = {
         id: Date.now().toString(),
         nome,
         telefone,
         dataNascimento,
         usuario,
-        senha: hashedPassword,
+        senha: senhaHasheada,
         isAdmin: false
       };
-
-      users.push(newUser);
-      await writeData('users', users);
       
-      const { senha: _, ...userWithoutPassword } = newUser;
-      res.status(201).json(userWithoutPassword);
+      usuarios.push(novoUsuario);
+      await writeData('users', usuarios);
+      
+      const { senha: _, ...usuarioSemSenha } = novoUsuario;
+      res.status(201).json(usuarioSemSenha);
     } catch (error) {
       next(error);
     }
   },
-
-  // Logar o usuario
+  
+  // Logar o usuário
   login: async (req, res, next) => {
     try {
-      const { usuario, senha } = req.body;
+      const { usuario: nomeUsuario, senha } = req.body;
       
-      const users = await readData('users');
-      const user = users.find(u => u.usuario === usuario);
-
-      if (!user || !(await bcrypt.compare(senha, user.senha))) {
+      const usuarios = await readData('users');
+      const usuarioEncontrado = usuarios.find(u => u.usuario === nomeUsuario);
+      
+      if (!usuarioEncontrado || !(await bcrypt.compare(senha, usuarioEncontrado.senha))) {
         throw new CustomError('Credenciais inválidas', 401);
       }
-
+      
       const token = jwt.sign(
-        { id: user.id, isAdmin: user.isAdmin },
+        { id: usuarioEncontrado.id, isAdmin: usuarioEncontrado.isAdmin },
         process.env.JWT_SECRET,
         { expiresIn: '24h' }
       );
-
+      
       res.json({ token });
     } catch (error) {
       next(error);
     }
   },
-
-  // Get usuario 
-  getProfile: async (req, res, next) => {
+  
+  // Obter perfil do usuário
+  obterPerfil: async (req, res, next) => {
     try {
-      const users = await readData('users');
-      const user = users.find(u => u.id === req.user.id);
+      const usuarios = await readData('users');
+      const usuario = usuarios.find(u => u.id === req.user.id);
       
-      if (!user) {
+      if (!usuario) {
         throw new CustomError('Usuário não encontrado', 404);
       }
-
-      const { senha: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      
+      const { senha: _, ...usuarioSemSenha } = usuario;
+      res.json(usuarioSemSenha);
     } catch (error) {
       next(error);
     }
   },
-
-  // Update usuario
-  updateProfile: async (req, res, next) => {
+  
+  // Atualizar perfil do usuário
+  atualizarPerfil: async (req, res, next) => {
     try {
       const { nome, telefone, dataNascimento, senha } = req.body;
       
-      const users = await readData('users');
-      const userIndex = users.findIndex(u => u.id === req.user.id);
-
-      if (userIndex === -1) {
+      const usuarios = await readData('users');
+      const indiceUsuario = usuarios.findIndex(u => u.id === req.user.id);
+      
+      if (indiceUsuario === -1) {
         throw new CustomError('Usuário não encontrado', 404);
       }
-
-      const updatedUser = {
-        ...users[userIndex],
-        nome: nome || users[userIndex].nome,
-        telefone: telefone || users[userIndex].telefone,
-        dataNascimento: dataNascimento || users[userIndex].dataNascimento
+      
+      const usuarioAtualizado = {
+        ...usuarios[indiceUsuario],
+        nome: nome || usuarios[indiceUsuario].nome,
+        telefone: telefone || usuarios[indiceUsuario].telefone,
+        dataNascimento: dataNascimento || usuarios[indiceUsuario].dataNascimento
       };
-
+      
       if (senha) {
-        updatedUser.senha = await bcrypt.hash(senha, 10);
+        usuarioAtualizado.senha = await bcrypt.hash(senha, 10);
       }
-
-      users[userIndex] = updatedUser;
-      await writeData('users', users);
-
-      const { senha: _, ...userWithoutPassword } = updatedUser;
-      res.json(userWithoutPassword);
+      
+      usuarios[indiceUsuario] = usuarioAtualizado;
+      await writeData('users', usuarios);
+      
+      const { senha: _, ...usuarioSemSenha } = usuarioAtualizado;
+      res.json(usuarioSemSenha);
     } catch (error) {
       next(error);
     }
   },
-
-  // Deletar usuario
-  deleteAccount: async (req, res, next) => {
+  
+  // Deletar conta do usuário
+  deletarConta: async (req, res, next) => {
     try {
-      const users = await readData('users');
-      const updatedUsers = users.filter(u => u.id !== req.user.id);
+      const usuarios = await readData('users');
+      const usuariosAtualizados = usuarios.filter(u => u.id !== req.user.id);
       
-      if (users.length === updatedUsers.length) {
+      if (usuarios.length === usuariosAtualizados.length) {
         throw new CustomError('Usuário não encontrado', 404);
       }
-
-      await writeData('users', updatedUsers);
+      
+      await writeData('users', usuariosAtualizados);
       res.json({ message: 'Conta excluída com sucesso' });
     } catch (error) {
       next(error);

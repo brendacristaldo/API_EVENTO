@@ -2,121 +2,121 @@ import bcrypt from 'bcryptjs';
 import { CustomError } from '../utils/customError.js';
 
 export const adminController = {
-  // Criaar um novo admin
-  createAdmin: async (req, res, next) => {
+  // Criar um novo administrador
+  criarAdmin: async (req, res, next) => {
     try {
       const { nome, telefone, dataNascimento, usuario, senha } = req.body;
       
-      const users = await readData('users');
+      const usuarios = await readData('users');
       
-      if (users.some(u => u.usuario === usuario)) {
+      if (usuarios.some(u => u.usuario === usuario)) {
         throw new CustomError('Usuário já existe', 400);
       }
-
-      const hashedPassword = await bcrypt.hash(senha, 10);
       
-      const newAdmin = {
+      const senhaHasheada = await bcrypt.hash(senha, 10);
+      
+      const novoAdmin = {
         id: Date.now().toString(),
         nome,
         telefone,
         dataNascimento,
         usuario,
-        senha: hashedPassword,
+        senha: senhaHasheada,
         isAdmin: true
       };
-
-      users.push(newAdmin);
-      await writeData('users', users);
       
-      const { senha: _, ...adminWithoutPassword } = newAdmin;
-      res.status(201).json(adminWithoutPassword);
+      usuarios.push(novoAdmin);
+      await writeData('users', usuarios);
+      
+      const { senha: _, ...adminSemSenha } = novoAdmin;
+      res.status(201).json(adminSemSenha);
     } catch (error) {
       next(error);
     }
   },
-
-  // Get todos os usuarios
-  getAllUsers: async (req, res, next) => {
+  
+  // Obter todos os usuários
+  obterTodosUsuarios: async (req, res, next) => {
     try {
-      const users = await readData('users');
-      const usersWithoutPasswords = users.map(user => {
-        const { senha: _, ...userWithoutPassword } = user;
-        return userWithoutPassword;
+      const usuarios = await readData('users');
+      const usuariosSemSenhas = usuarios.map(usuario => {
+        const { senha: _, ...usuarioSemSenha } = usuario;
+        return usuarioSemSenha;
       });
-
-      res.json(usersWithoutPasswords);
+      
+      res.json(usuariosSemSenhas);
     } catch (error) {
       next(error);
     }
   },
-
-  // Get usuario por ID
-  getUserById: async (req, res, next) => {
+  
+  // Obter usuário por ID
+  obterUsuarioPorId: async (req, res, next) => {
     try {
       const { userId } = req.params;
-      const users = await readData('users');
-      const user = users.find(u => u.id === userId);
-
-      if (!user) {
+      const usuarios = await readData('users');
+      const usuario = usuarios.find(u => u.id === userId);
+      
+      if (!usuario) {
         throw new CustomError('Usuário não encontrado', 404);
       }
-
-      const { senha: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
+      
+      const { senha: _, ...usuarioSemSenha } = usuario;
+      res.json(usuarioSemSenha);
     } catch (error) {
       next(error);
     }
   },
-
-  // Update usuario
-  updateUser: async (req, res, next) => {
+  
+  // Atualizar usuário
+  atualizarUsuario: async (req, res, next) => {
     try {
       const { userId } = req.params;
       const { nome, telefone, dataNascimento, isAdmin } = req.body;
-
-      const users = await readData('users');
-      const userIndex = users.findIndex(u => u.id === userId);
-
-      if (userIndex === -1) {
+      
+      const usuarios = await readData('users');
+      const indiceUsuario = usuarios.findIndex(u => u.id === userId);
+      
+      if (indiceUsuario === -1) {
         throw new CustomError('Usuário não encontrado', 404);
       }
-
-      users[userIndex] = {
-        ...users[userIndex],
-        nome: nome || users[userIndex].nome,
-        telefone: telefone || users[userIndex].telefone,
-        dataNascimento: dataNascimento || users[userIndex].dataNascimento,
-        isAdmin: isAdmin !== undefined ? isAdmin : users[userIndex].isAdmin
+      
+      usuarios[indiceUsuario] = {
+        ...usuarios[indiceUsuario],
+        nome: nome || usuarios[indiceUsuario].nome,
+        telefone: telefone || usuarios[indiceUsuario].telefone,
+        dataNascimento: dataNascimento || usuarios[indiceUsuario].dataNascimento,
+        isAdmin: isAdmin !== undefined ? isAdmin : usuarios[indiceUsuario].isAdmin
       };
-
-      await writeData('users', users);
-
-      const { senha: _, ...userWithoutPassword } = users[userIndex];
-      res.json(userWithoutPassword);
+      
+      await writeData('users', usuarios);
+      
+      const { senha: _, ...usuarioSemSenha } = usuarios[indiceUsuario];
+      res.json(usuarioSemSenha);
     } catch (error) {
       next(error);
     }
   },
-
-  // Deletar usuario
-  deleteUser: async (req, res, next) => {
+  
+  // Deletar usuário
+  deletarUsuario: async (req, res, next) => {
     try {
       const { userId } = req.params;
       
-      const users = await readData('users');
-      const userToDelete = users.find(u => u.id === userId);
-
-      if (!userToDelete) {
+      const usuarios = await readData('users');
+      const usuarioParaDeletar = usuarios.find(u => u.id === userId);
+      
+      if (!usuarioParaDeletar) {
         throw new CustomError('Usuário não encontrado', 404);
       }
-
-      if (userToDelete.isAdmin) {
+      
+      if (usuarioParaDeletar.isAdmin) {
         throw new CustomError('Não é possível excluir um administrador', 403);
       }
-
-      const updatedUsers = users.filter(u => u.id !== userId);
-      await writeData('users', updatedUsers);
-
+      
+      const usuariosAtualizados = usuarios.filter(u => u.id !== userId);
+      await writeData('users', usuariosAtualizados);
+      
       res.json({ message: 'Usuário excluído com sucesso' });
     } catch (error) {
       next(error);

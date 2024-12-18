@@ -2,107 +2,107 @@ import { CustomError } from '../utils/customError.js';
 
 export const eventController = {
   // Criar novo evento
-  createEvent: async (req, res, next) => {
+  criarEvento: async (req, res, next) => {
     try {
       const { nome, data, endereco } = req.body;
       
-      const events = await readData('events');
+      const eventos = await readData('events');
       
-      const newEvent = {
+      const novoEvento = {
         id: Date.now().toString(),
         nome,
         data,
         endereco,
         createdBy: req.user.id
       };
-
-      events.push(newEvent);
-      await writeData('events', events);
       
-      res.status(201).json(newEvent);
+      eventos.push(novoEvento);
+      await writeData('events', eventos);
+      
+      res.status(201).json(novoEvento);
     } catch (error) {
       next(error);
     }
   },
-
-  // Get todos os eventos
-  getAllEvents: async (req, res, next) => {
+  
+  // Obter todos os eventos
+  obterTodosEventos: async (req, res, next) => {
     try {
-      const events = await readData('events');
-      res.json(events);
+      const eventos = await readData('events');
+      res.json(eventos);
     } catch (error) {
       next(error);
     }
   },
-
-  // Get evento por ID
-  getEventById: async (req, res, next) => {
+  
+  // Obter evento por ID
+  obterEventoPorId: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const events = await readData('events');
-      const event = events.find(e => e.id === id);
-
-      if (!event) {
+      const eventos = await readData('events');
+      const evento = eventos.find(e => e.id === id);
+      
+      if (!evento) {
         throw new CustomError('Evento não encontrado', 404);
       }
-
-      res.json(event);
+      
+      res.json(evento);
     } catch (error) {
       next(error);
     }
   },
-
-  // Update evento
-  updateEvent: async (req, res, next) => {
+  
+  // Atualizar evento
+  atualizarEvento: async (req, res, next) => {
     try {
       const { id } = req.params;
       const { nome, data, endereco } = req.body;
       
-      const events = await readData('events');
-      const eventIndex = events.findIndex(e => e.id === id);
-
-      if (eventIndex === -1) {
+      const eventos = await readData('events');
+      const indiceEvento = eventos.findIndex(e => e.id === id);
+      
+      if (indiceEvento === -1) {
         throw new CustomError('Evento não encontrado', 404);
       }
-
+      
       // Verificar se o usuário é admin ou criador do evento
-      if (!req.user.isAdmin && events[eventIndex].createdBy !== req.user.id) {
+      if (!req.user.isAdmin && eventos[indiceEvento].createdBy !== req.user.id) {
         throw new CustomError('Não autorizado', 403);
       }
-
-      events[eventIndex] = {
-        ...events[eventIndex],
-        nome: nome || events[eventIndex].nome,
-        data: data || events[eventIndex].data,
-        endereco: endereco || events[eventIndex].endereco
+      
+      eventos[indiceEvento] = {
+        ...eventos[indiceEvento],
+        nome: nome || eventos[indiceEvento].nome,
+        data: data || eventos[indiceEvento].data,
+        endereco: endereco || eventos[indiceEvento].endereco
       };
-
-      await writeData('events', events);
-      res.json(events[eventIndex]);
+      
+      await writeData('events', eventos);
+      res.json(eventos[indiceEvento]);
     } catch (error) {
       next(error);
     }
   },
-
+  
   // Deletar o evento
-  deleteEvent: async (req, res, next) => {
+  deletarEvento: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const events = await readData('events');
-      const event = events.find(e => e.id === id);
-
-      if (!event) {
+      const eventos = await readData('events');
+      const evento = eventos.find(e => e.id === id);
+      
+      if (!evento) {
         throw new CustomError('Evento não encontrado', 404);
       }
-
+      
       // Verificar se o usuário é admin ou criador do evento
-      if (!req.user.isAdmin && event.createdBy !== req.user.id) {
+      if (!req.user.isAdmin && evento.createdBy !== req.user.id) {
         throw new CustomError('Não autorizado', 403);
       }
-
-      const updatedEvents = events.filter(e => e.id !== id);
-      await writeData('events', updatedEvents);
-
+      
+      const eventosAtualizados = eventos.filter(e => e.id !== id);
+      await writeData('events', eventosAtualizados);
+      
       res.json({ message: 'Evento excluído com sucesso' });
     } catch (error) {
       next(error);
