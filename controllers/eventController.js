@@ -1,4 +1,30 @@
+import fs from 'fs/promises';
+import path from 'path';
 import { CustomError } from '../utils/customError.js';
+
+const ARQUIVO_EVENTOS = path.resolve(__dirname, '../dados/eventos.json');
+
+const readData = async () => {
+  try {
+    const dados = await fs.readFile(ARQUIVO_EVENTOS, 'utf8');
+    return JSON.parse(dados);
+  } catch (erro) {
+    if (erro.code === 'ENOENT') {
+      return [];
+    }
+    console.error('Erro ao ler eventos:', erro);
+    throw new CustomError('Erro ao carregar eventos', 500);
+  }
+};
+
+const writeData = async (eventos) => {
+  try {
+    await fs.writeFile(ARQUIVO_EVENTOS, JSON.stringify(eventos, null, 2));
+  } catch (erro) {
+    console.error('Erro ao salvar eventos:', erro);
+    throw new CustomError('Erro ao salvar eventos', 500);
+  }
+};
 
 export const eventController = {
   // Criar novo evento
@@ -6,18 +32,23 @@ export const eventController = {
     try {
       const { nome, data, endereco } = req.body;
       
-      const eventos = await readData('events');
+      // Validações de entrada
+      if (!nome || !data || !endereco) {
+        throw new CustomError('Dados do evento incompletos', 400);
+      }
+      
+      const eventos = await readData();
       
       const novoEvento = {
         id: Date.now().toString(),
         nome,
         data,
         endereco,
-        createdBy: req.user.id
+        criadoPor: req.usuario.id
       };
       
       eventos.push(novoEvento);
-      await writeData('events', eventos);
+      await writeData(eventos);
       
       res.status(201).json(novoEvento);
     } catch (error) {
@@ -28,7 +59,13 @@ export const eventController = {
   // Obter todos os eventos
   obterTodosEventos: async (req, res, next) => {
     try {
-      const eventos = await readData('events');
+      const eventos = await readData();
+      
+      // Se não for admin, mostra apenas eventos do usuário
+      if (!req.usuario.ehAdmin) {
+        return res.json(eventos.filter(e => e.criadoPor === req.usuario.id));
+      }
+      
       res.json(eventos);
     } catch (error) {
       next(error);
@@ -39,11 +76,16 @@ export const eventController = {
   obterEventoPorId: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const eventos = await readData('events');
+      const eventos = await readData();
       const evento = eventos.find(e => e.id === id);
       
       if (!evento) {
         throw new CustomError('Evento não encontrado', 404);
+      }
+      
+      // Verificar permissão
+      if (!req.usuario.ehAdmin && evento.criadoPor !== req.usuario.id) {
+        throw new CustomError('Não autorizado', 403);
       }
       
       res.json(evento);
@@ -58,7 +100,7 @@ export const eventController = {
       const { id } = req.params;
       const { nome, data, endereco } = req.body;
       
-      const eventos = await readData('events');
+      const eventos = await readData();
       const indiceEvento = eventos.findIndex(e => e.id === id);
       
       if (indiceEvento === -1) {
@@ -66,7 +108,7 @@ export const eventController = {
       }
       
       // Verificar se o usuário é admin ou criador do evento
-      if (!req.user.isAdmin && eventos[indiceEvento].createdBy !== req.user.id) {
+      if (!req.usuario.ehAdmin && eventos[indiceEvento].criadoPor !== req.usuario.id) {
         throw new CustomError('Não autorizado', 403);
       }
       
@@ -77,7 +119,7 @@ export const eventController = {
         endereco: endereco || eventos[indiceEvento].endereco
       };
       
-      await writeData('events', eventos);
+      await writeData(eventos);
       res.json(eventos[indiceEvento]);
     } catch (error) {
       next(error);
@@ -88,7 +130,7 @@ export const eventController = {
   deletarEvento: async (req, res, next) => {
     try {
       const { id } = req.params;
-      const eventos = await readData('events');
+      const eventos = await readData();
       const evento = eventos.find(e => e.id === id);
       
       if (!evento) {
@@ -96,14 +138,14 @@ export const eventController = {
       }
       
       // Verificar se o usuário é admin ou criador do evento
-      if (!req.user.isAdmin && evento.createdBy !== req.user.id) {
+      if (!req.usuario.ehAdmin && evento.criadoPor !== req.usuario.id) {
         throw new CustomError('Não autorizado', 403);
       }
       
       const eventosAtualizados = eventos.filter(e => e.id !== id);
-      await writeData('events', eventosAtualizados);
+      await writeData(eventosAtualizados);
       
-      res.json({ message: 'Evento excluído com sucesso' });
+      res.json({ mensagem: 'Evento excluído com sucesso' });
     } catch (error) {
       next(error);
     }
