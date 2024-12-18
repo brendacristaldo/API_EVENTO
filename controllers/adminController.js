@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { CustomError } from '../utils/customError.js';
 
 export const adminController = {
-  // Criar um novo administrador
+  // Criaar um novo administrador
   criarAdmin: async (req, res, next) => {
     try {
       const { nome, telefone, dataNascimento, usuario, senha } = req.body;
