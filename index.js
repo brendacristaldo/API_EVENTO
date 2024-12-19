@@ -1,10 +1,10 @@
 const express = require('express');
-//const dotenv = require('dotenv');
+const dotenv = require('dotenv');
 const loginRota = require('./routes/loginRota');
 const perfilRota = require('./routes/perfilRota');
 const usuarioExcluirRota = require('./routes/usuarioExcluirRota');
 
-//dotenv.config();
+dotenv.config();
 
 const app = express();
 
