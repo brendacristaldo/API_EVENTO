@@ -21,16 +21,15 @@ Essa API é um sistema de gerenciamento de eventos desenvolvido em Node.js, util
 - Dotenv
 
 ## Instalação e Execução
-
-Clone o repositório
-Instale as dependências com npm install
-Execute o servidor com npm run dev
-Use a rota http://localhost:3000/users/install para criar um administrador
-Faça o login na rota http://localhost:3000/users/login com o usuário e senha do aministrador (admin, admin123) padrão para gerar o token
-Use o token do administrador padrão para usar as rotas que só podem ser usadas por um administrador
-Cadastre um usuário comum na rota http://localhost:3000/users/register
-Faça login com o usuário e senha do usuário comum para gerar o token dele
-Use o token para usar as rotas que só podem ser usadas por um usuário comum e divirta-se!
+- Clone o repositório
+- Instale as dependências com npm install
+- Execute o servidor com npm run dev
+- Use a rota http://localhost:3000/users/install para criar um administrador
+- Faça o login na rota http://localhost:3000/users/login com o usuário e senha do aministrador (admin, admin123) padrão para gerar o token
+- Use o token do administrador padrão para usar as rotas que só podem ser usadas por um administrador
+- Cadastre um usuário comum na rota http://localhost:3000/users/register
+- Faça login com o usuário e senha do usuário comum para gerar o token dele
+- Use o token para usar as rotas que só podem ser usadas por um usuário comum e divirta-se!
 
 
 ## Documentação
