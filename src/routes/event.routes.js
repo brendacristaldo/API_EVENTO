@@ -119,4 +119,32 @@ eventRoutes.get('/:id', EventController.show);
  */
 eventRoutes.get('/', EventController.index);
 
+/**
+ * @swagger
+ * /events/{id}/guests/count:
+ *   get:
+ *     summary: Retorna o número total de convidados de um evento
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Total de convidados do evento
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 eventId:
+ *                   type: integer
+ *                 totalGuests:
+ *                   type: integer
+ */
+eventRoutes.get('/:id/guests/count', EventController.getGuestCount);
+
 module.exports = eventRoutes;

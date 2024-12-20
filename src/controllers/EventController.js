@@ -79,24 +79,32 @@ class EventController {
     const { limit = 5, page = 1 } = req.query;
     const userId = req.user.id;
 
-    // Valida parâmetros de paginação
     const { parsedLimit, parsedPage } = PaginationHelper.validate(limit, page);
-    
-    // Calcula deslocamento para paginação
     const offset = PaginationHelper.calculateOffset(parsedPage, parsedLimit);
 
-    // Get eventos paginados para o usuário
     const events = Event.findByUserPaginated(userId, parsedLimit, offset);
-    
-    // Get contagem total de eventos para este usuário
     const total = Event.countByUser(userId);
-    
-    // Get metadados de paginação
     const pagination = PaginationHelper.getPaginationData(total, parsedPage, parsedLimit);
 
     return res.json({
       events,
       pagination
+    });
+  }
+
+  async getGuestCount(req, res) {
+    const { id } = req.params;
+    const event = Event.findById(Number(id));
+
+    if (!event) {
+      throw new AppError('Evento não encontrado', 404);
+    }
+
+    const guestCount = Event.getGuestCount(Number(id));
+
+    return res.json({
+      eventId: Number(id),
+      totalGuests: guestCount
     });
   }
 }

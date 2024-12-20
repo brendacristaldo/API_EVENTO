@@ -1,10 +1,13 @@
-// Simulação do modelo de evento
 class Event {
   static events = [];
   static counter = 1;
 
   static create(eventData) {
-    const event = { id: this.counter++, ...eventData };
+    const event = { 
+      id: this.counter++, 
+      ...eventData,
+      guests: [] 
+    };
     this.events.push(event);
     return event;
   }
@@ -32,17 +35,23 @@ class Event {
   }
 
   static findByUserPaginated(userId, limit, offset) {
-    const events = this.findAll()
+    return this.findAll()
       .filter(event => event.userId === userId)
       .slice(offset, offset + limit);
-    
-    return events;
   }
 
   static countByUser(userId) {
     return this.findAll()
       .filter(event => event.userId === userId)
       .length;
+  }
+
+  static getGuestCount(id) {
+    const event = this.findById(id);
+    if (!event) return 0;
+    
+    const Guest = require('./Guest');
+    return Guest.findByEvent(id).length;
   }
 }
 
