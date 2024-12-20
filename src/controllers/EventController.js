@@ -1,5 +1,6 @@
 const Event = require('../models/Event');
 const AppError = require('../utils/AppError');
+const PaginationHelper = require('../utils/pagination');
 
 class EventController {
   async create(req, res) {
@@ -75,10 +76,28 @@ class EventController {
   }
 
   async index(req, res) {
+    const { limit = 5, page = 1 } = req.query;
     const userId = req.user.id;
-    const events = Event.findAll().filter(event => event.userId === userId);
 
-    return res.json({ events });
+    // Valida parâmetros de paginação
+    const { parsedLimit, parsedPage } = PaginationHelper.validate(limit, page);
+    
+    // Calcula deslocamento para paginação
+    const offset = PaginationHelper.calculateOffset(parsedPage, parsedLimit);
+
+    // Get eventos paginados para o usuário
+    const events = Event.findByUserPaginated(userId, parsedLimit, offset);
+    
+    // Get contagem total de eventos para este usuário
+    const total = Event.countByUser(userId);
+    
+    // Get metadados de paginação
+    const pagination = PaginationHelper.getPaginationData(total, parsedPage, parsedLimit);
+
+    return res.json({
+      events,
+      pagination
+    });
   }
 }
 

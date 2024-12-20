@@ -30,6 +30,20 @@ class Event {
   static findAll() {
     return this.events;
   }
+
+  static findByUserPaginated(userId, limit, offset) {
+    const events = this.findAll()
+      .filter(event => event.userId === userId)
+      .slice(offset, offset + limit);
+    
+    return events;
+  }
+
+  static countByUser(userId) {
+    return this.findAll()
+      .filter(event => event.userId === userId)
+      .length;
+  }
 }
 
 module.exports = Event;
