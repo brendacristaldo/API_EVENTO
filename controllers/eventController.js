@@ -1,153 +1,85 @@
-import fs from 'fs/promises';
-import path from 'path';
-import { CustomError } from '../utils/customError.js';
+const Event = require('../models/Event');
+const AppError = require('../utils/AppError');
 
-const ARQUIVO_EVENTOS = path.resolve(__dirname, '../dados/eventos.json');
+class EventController {
+  async create(req, res) {
+    const { name, date, location, type } = req.body;
+    const userId = req.user.id;
 
-const readData = async () => {
-  try {
-    const dados = await fs.readFile(ARQUIVO_EVENTOS, 'utf8');
-    return JSON.parse(dados);
-  } catch (erro) {
-    if (erro.code === 'ENOENT') {
-      return [];
-    }
-    console.error('Erro ao ler eventos:', erro);
-    throw new CustomError('Erro ao carregar eventos', 500);
+    const event = Event.create({
+      name,
+      date,
+      location,
+      type,
+      userId
+    });
+
+    return res.status(201).json({
+      message: 'Evento criado com sucesso',
+      event
+    });
   }
-};
 
-const writeData = async (eventos) => {
-  try {
-    await fs.writeFile(ARQUIVO_EVENTOS, JSON.stringify(eventos, null, 2));
-  } catch (erro) {
-    console.error('Erro ao salvar eventos:', erro);
-    throw new CustomError('Erro ao salvar eventos', 500);
-  }
-};
+  async update(req, res) {
+    const { id } = req.params;
+    const userId = req.user.id;
+    const eventData = req.body;
 
-export const eventController = {
-  // Criar novo evento
-  criarEvento: async (req, res, next) => {
-    try {
-      const { nome, data, endereco } = req.body;
-      
-      // Validações de entrada
-      if (!nome || !data || !endereco) {
-        throw new CustomError('Dados do evento incompletos', 400);
-      }
-      
-      const eventos = await readData();
-      
-      const novoEvento = {
-        id: Date.now().toString(),
-        nome,
-        data,
-        endereco,
-        criadoPor: req.usuario.id
-      };
-      
-      eventos.push(novoEvento);
-      await writeData(eventos);
-      
-      res.status(201).json(novoEvento);
-    } catch (error) {
-      next(error);
+    const event = Event.findById(Number(id));
+
+    if (!event) {
+      throw new AppError('Evento não encontrado', 404);
     }
-  },
-  
-  // Obter todos os eventos
-  obterTodosEventos: async (req, res, next) => {
-    try {
-      const eventos = await readData();
-      
-      // Se não for admin, mostra apenas eventos do usuário
-      if (!req.usuario.ehAdmin) {
-        return res.json(eventos.filter(e => e.criadoPor === req.usuario.id));
-      }
-      
-      res.json(eventos);
-    } catch (error) {
-      next(error);
+
+    if (event.userId !== userId) {
+      throw new AppError('Você não tem permissão para atualizar este evento', 403);
     }
-  },
-  
-  // Obter evento por ID
-  obterEventoPorId: async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const eventos = await readData();
-      const evento = eventos.find(e => e.id === id);
-      
-      if (!evento) {
-        throw new CustomError('Evento não encontrado', 404);
-      }
-      
-      // Verificar permissão
-      if (!req.usuario.ehAdmin && evento.criadoPor !== req.usuario.id) {
-        throw new CustomError('Não autorizado', 403);
-      }
-      
-      res.json(evento);
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // Atualizar evento
-  atualizarEvento: async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { nome, data, endereco } = req.body;
-      
-      const eventos = await readData();
-      const indiceEvento = eventos.findIndex(e => e.id === id);
-      
-      if (indiceEvento === -1) {
-        throw new CustomError('Evento não encontrado', 404);
-      }
-      
-      // Verificar se o usuário é admin ou criador do evento
-      if (!req.usuario.ehAdmin && eventos[indiceEvento].criadoPor !== req.usuario.id) {
-        throw new CustomError('Não autorizado', 403);
-      }
-      
-      eventos[indiceEvento] = {
-        ...eventos[indiceEvento],
-        nome: nome || eventos[indiceEvento].nome,
-        data: data || eventos[indiceEvento].data,
-        endereco: endereco || eventos[indiceEvento].endereco
-      };
-      
-      await writeData(eventos);
-      res.json(eventos[indiceEvento]);
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // Deletar o evento
-  deletarEvento: async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const eventos = await readData();
-      const evento = eventos.find(e => e.id === id);
-      
-      if (!evento) {
-        throw new CustomError('Evento não encontrado', 404);
-      }
-      
-      // Verificar se o usuário é admin ou criador do evento
-      if (!req.usuario.ehAdmin && evento.criadoPor !== req.usuario.id) {
-        throw new CustomError('Não autorizado', 403);
-      }
-      
-      const eventosAtualizados = eventos.filter(e => e.id !== id);
-      await writeData(eventosAtualizados);
-      
-      res.json({ mensagem: 'Evento excluído com sucesso' });
-    } catch (error) {
-      next(error);
-    }
+
+    const updatedEvent = Event.update(Number(id), eventData);
+
+    return res.json({
+      message: 'Evento atualizado com sucesso',
+      event: updatedEvent
+    });
   }
-};
+
+  async delete(req, res) {
+    const { id } = req.params;
+    const userId = req.user.id;
+
+    const event = Event.findById(Number(id));
+
+    if (!event) {
+      throw new AppError('Evento não encontrado', 404);
+    }
+
+    if (event.userId !== userId) {
+      throw new AppError('Você não tem permissão para excluir este evento', 403);
+    }
+
+    Event.delete(Number(id));
+
+    return res.json({ message: 'Evento excluído com sucesso' });
+  }
+
+  async show(req, res) {
+    const { id } = req.params;
+
+    const event = Event.findById(Number(id));
+
+    if (!event) {
+      throw new AppError('Evento não encontrado', 404);
+    }
+
+    return res.json({ event });
+  }
+
+  async index(req, res) {
+    const userId = req.user.id;
+    const events = Event.findAll().filter(event => event.userId === userId);
+
+    return res.json({ events });
+  }
+}
+
+module.exports = new EventController();

@@ -1,170 +1,125 @@
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import fs from 'fs/promises';
-import path from 'path';
-import { CustomError } from '../utils/customError.js';
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const AppError = require('../utils/AppError');
 
-const ARQUIVO_USUARIOS = path.resolve(__dirname, '../dados/usuarios.json');
-
-const readData = async () => {
-  try {
-    const dados = await fs.readFile(ARQUIVO_USUARIOS, 'utf8');
-    return JSON.parse(dados);
-  } catch (erro) {
-    if (erro.code === 'ENOENT') {
-      return [];
+class UserController {
+  async install(req, res) {
+    const adminExists = User.findByUsername('admin');
+    
+    if (adminExists) {
+      throw new AppError('Administrador já foi instalado', 400);
     }
-    console.error('Erro ao ler usuários:', erro);
-    throw new CustomError('Erro ao carregar usuários', 500);
+
+    const hashedPassword = await bcrypt.hash('admin123', 8);
+    
+    const admin = User.create({
+      name: 'Administrador',
+      username: 'admin',
+      password: hashedPassword,
+      role: 'admin'
+    });
+
+    return res.status(201).json({
+      message: 'Administrador criado com sucesso',
+      admin: { ...admin, password: undefined }
+    });
   }
-};
 
-const writeData = async (usuarios) => {
-  try {
-    await fs.writeFile(ARQUIVO_USUARIOS, JSON.stringify(usuarios, null, 2));
-  } catch (erro) {
-    console.error('Erro ao salvar usuários:', erro);
-    throw new CustomError('Erro ao salvar usuários', 500);
-  }
-};
+  async create(req, res) {
+    const { name, username, password, role, phone, birthDate } = req.body;
 
-export const userController = {
-  // Criar um novo usuário
-  criarUsuario: async (req, res, next) => {
-    try {
-      const { nome, telefone, dataNascimento, usuario, senha } = req.body;
-      
-      // Validações de entrada
-      if (!nome || !usuario || !senha) {
-        throw new CustomError('Dados incompletos', 400);
-      }
-      
-      const usuarios = await readData();
-      
-      if (usuarios.some(u => u.usuario === usuario)) {
-        throw new CustomError('Usuário já existe', 400);
-      }
-      
-      const senhaHasheada = await bcrypt.hash(senha, 10);
-      
-      const novoUsuario = {
-        id: Date.now().toString(),
-        nome,
-        telefone,
-        dataNascimento,
-        usuario,
-        senha: senhaHasheada,
-        ehAdmin: false
-      };
-      
-      usuarios.push(novoUsuario);
-      await writeData(usuarios);
-      
-      const { senha: _, ...usuarioSemSenha } = novoUsuario;
-      res.status(201).json(usuarioSemSenha);
-    } catch (error) {
-      next(error);
+    if (User.findByUsername(username)) {
+      throw new AppError('Nome de usuário já existe');
     }
-  },
-  
-  // Logar o usuário
-  login: async (req, res, next) => {
-    try {
-      const { usuario, senha } = req.body;
-      
-      // Validações de entrada
-      if (!usuario || !senha) {
-        throw new CustomError('Credenciais incompletas', 400);
-      }
-      
-      const usuarios = await readData();
-      const usuarioEncontrado = usuarios.find(u => u.usuario === usuario);
-      
-      if (!usuarioEncontrado || !(await bcrypt.compare(senha, usuarioEncontrado.senha))) {
-        throw new CustomError('Credenciais inválidas', 401);
-      }
-      
-      // Geração de token com chave secreta
-      const token = jwt.sign(
-        { 
-          id: usuarioEncontrado.id, 
-          ehAdmin: usuarioEncontrado.ehAdmin 
-        },
-        process.env.JWT_SEGREDO || 'chave-secreta-padrao',
-        { expiresIn: '24h' }
-      );
-      
-      res.json({ token });
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // Obter perfil do usuário
-  obterPerfil: async (req, res, next) => {
-    try {
-      const usuarios = await readData();
-      const usuario = usuarios.find(u => u.id === req.usuario.id);
-      
-      if (!usuario) {
-        throw new CustomError('Usuário não encontrado', 404);
-      }
-      
-      const { senha: _, ...usuarioSemSenha } = usuario;
-      res.json(usuarioSemSenha);
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // Atualizar perfil do usuário
-  atualizarPerfil: async (req, res, next) => {
-    try {
-      const { nome, telefone, dataNascimento, senha } = req.body;
-      
-      const usuarios = await readData();
-      const indiceUsuario = usuarios.findIndex(u => u.id === req.usuario.id);
-      
-      if (indiceUsuario === -1) {
-        throw new CustomError('Usuário não encontrado', 404);
-      }
-      
-      const usuarioAtualizado = {
-        ...usuarios[indiceUsuario],
-        nome: nome || usuarios[indiceUsuario].nome,
-        telefone: telefone || usuarios[indiceUsuario].telefone,
-        dataNascimento: dataNascimento || usuarios[indiceUsuario].dataNascimento
-      };
-      
-      // Atualizar senha se fornecida
-      if (senha) {
-        usuarioAtualizado.senha = await bcrypt.hash(senha, 10);
-      }
-      
-      usuarios[indiceUsuario] = usuarioAtualizado;
-      await writeData(usuarios);
-      
-      const { senha: _, ...usuarioSemSenha } = usuarioAtualizado;
-      res.json(usuarioSemSenha);
-    } catch (error) {
-      next(error);
-    }
-  },
-  
-  // Deletar conta do usuário
-  deletarConta: async (req, res, next) => {
-    try {
-      const usuarios = await readData();
-      const usuariosAtualizados = usuarios.filter(u => u.id !== req.usuario.id);
-      
-      if (usuarios.length === usuariosAtualizados.length) {
-        throw new CustomError('Usuário não encontrado', 404);
-      }
-      
-      await writeData(usuariosAtualizados);
-      res.json({ mensagem: 'Conta excluída com sucesso' });
-    } catch (error) {
-      next(error);
-    }
+
+    const hashedPassword = await bcrypt.hash(password, 8);
+
+    const user = User.create({
+      name,
+      username,
+      password: hashedPassword,
+      role: role || 'common',
+      phone,
+      birthDate
+    });
+
+    return res.status(201).json({
+      message: 'Usuário criado com sucesso',
+      user: { ...user, password: undefined }
+    });
   }
-};
+
+  async login(req, res) {
+    const { username, password } = req.body;
+
+    const user = User.findByUsername(username);
+
+    if (!user) {
+      throw new AppError('Usuário ou senha inválidos', 401);
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+
+    if (!passwordMatch) {
+      throw new AppError('Usuário ou senha inválidos', 401);
+    }
+
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    return res.json({
+      user: { ...user, password: undefined },
+      token
+    });
+  }
+
+  async update(req, res) {
+    const { id } = req.params;
+    const userData = req.body;
+
+    if (userData.password) {
+      userData.password = await bcrypt.hash(userData.password, 8);
+    }
+
+    const user = User.update(Number(id), userData);
+
+    if (!user) {
+      throw new AppError('Usuário não encontrado', 404);
+    }
+
+    return res.json({
+      message: 'Usuário atualizado com sucesso',
+      user: { ...user, password: undefined }
+    });
+  }
+
+  async delete(req, res) {
+    const { id } = req.params;
+
+    const deleted = User.delete(Number(id));
+
+    if (!deleted) {
+      throw new AppError('Usuário não encontrado', 404);
+    }
+
+    return res.json({ message: 'Usuário excluído com sucesso' });
+  }
+
+  async show(req, res) {
+    const { id } = req.params;
+
+    const user = User.findById(Number(id));
+
+    if (!user) {
+      throw new AppError('Usuário não encontrado', 404);
+    }
+
+    return res.json({ user: { ...user, password: undefined } });
+  }
+}
+
+module.exports = new UserController();
