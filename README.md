@@ -13,31 +13,11 @@ Essa API é um sistema de gerenciamento de eventos desenvolvido em Node.js, util
 - Persistência em arquivos JSON
 - Tratamento de exceções personalizado
 
-## Endpoints
-
-### Usuários
-- POST /users/login: Autenticar usuário
-- GET /users/install: Criar usuário administrador padrão
-GET /users/:id: Buscar usuário por ID
-### Eventos
-POST /events: Criar novo evento
-GET /events: Listar todos os eventos do usuário
-GET /events/:id: Buscar evento por ID
-PUT /events/:id: Atualizar evento
-DELETE /events/:id: Excluir evento
-### Convidados
-POST /guests: Adicionar novo convidado
-GET /guests: Listar todos os convidados do evento
-GET /guests/:id: Buscar convidado por ID
-PUT /guests/:id: Atualizar convidado
-DELETE /guests/:id: Excluir convidado
-
 ## Tecnologias Utilizadas
-
-Node.js
-Express.js
-JSON
-Swagger
+- Node.js
+- Express.js
+- JSON
+- Swagger
 
 ## Instalação e Execução
 
@@ -47,7 +27,6 @@ Execute o servidor com npm start
 Acesse a API em http://localhost:3000
 
 ## Documentação
-
 A documentação da API está disponível em http://localhost:3000/docs após a execução do servidor.
 
 ## Integrantes:
